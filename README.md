@@ -1,161 +1,70 @@
-# 手写字母识别系统 ✍️
+# Handw-rs: 手写字母识别系统 ✍️
 
-这是一个使用Rust语言实现的手写字母识别系统，使用自定义K均值聚类(KMeans)算法进行字母分类。
+基于Rust实现的手写字母识别系统，采用自定义K均值聚类(KMeans)算法进行字母分类。
 
-## 功能 ✨
+## 功能特点 ✨
 
-- 训练手写字母识别模型
-- 识别单个手写字母图像
-- 支持A-Z的26个英文字母
-- 支持从CSV文件加载训练数据
+- **模型训练**: 从CSV数据集或图像目录创建手写字母识别模型
+- **字母识别**: 准确识别单个手写字母图像
+- **模型持久化**: 保存训练好的模型以便后续使用
+- **多数据源支持**: 兼容CSV格式和图像目录两种数据输入
+- **完整字母集**: 支持26个英文大写字母(A-Z)的识别
 
-## 安装 🔧
+## 快速开始 🚀
 
-确保您已安装Rust和Cargo。然后克隆此仓库并构建项目：
+### 安装 
 
 ```bash
-git clone https://github.com/yourusername/handwritten_recognition.git
-cd handwritten_recognition
+git clone https://github.com/Wang-Yang-source/Handw-rs.git
 cargo build --release
 ```
 
-## 数据集准备 📊
+### 使用流程
 
-### 使用CSV数据集
-
-本项目默认使用Kaggle的"A_Z Handwritten
-Data.csv"数据集。该数据集包含手写字母A-Z的样本，每个样本由28x28像素的图像表示，存储在CSV文件中。
-
-CSV文件的格式如下：
-
-- 第一列：标签（0-25对应A-Z）
-- 其余列：784个像素值（28x28图像的像素值）
-
-### 使用图像目录 🖼️
-
-您也可以使用按以下结构组织的图像目录：
-
-```
-data/
-  train/
-    A/
-      image1.png
-      image2.png
-      ...
-    B/
-      image1.png
-      image2.png
-      ...
-    ...
-    Z/
-      ...
-```
-
-每个字母目录下应包含该字母的多个手写样本图像。
-
-## 使用方法 🚀
-
-### 训练模型 🧠
-
-从CSV文件训练：
+**1. 训练模型**
 
 ```bash
+# 使用CSV数据集训练
 cargo run -- --train --use-csv
-```
 
-从图像目录训练：
-
-```bash
+# 使用图像目录训练
 cargo run -- --train
 ```
 
-默认情况下，训练数据将从`data/A_Z Handwritten Data.csv`（CSV模式）或`data/train`（图像目录模式）加载，模型将保存到`model.json`。
-
-您可以指定自定义路径：
-
-```bash
-cargo run -- --train --use-csv --train-path /path/to/data.csv --model-path /path/to/save/model.json
-```
-
-或使用短选项：
-
-```bash
-cargo run -- -t -u -p /path/to/data.csv -m /path/to/save/model.json
-```
-
-### 识别图像 🔍
+**2. 字母识别**
 
 ```bash
 cargo run -- --test-image /path/to/image.png
 ```
 
-或使用短选项：
+## 命令行参数 💻
 
-```bash
-cargo run -- -i /path/to/image.png
-```
+| 参数          | 缩写 | 功能描述           |
+|--------------|------|-------------------|
+| --train      | -t   | 训练新模型         |
+| --train-path | -p   | 指定训练数据路径    |
+| --test-image | -i   | 指定识别图像路径    |
+| --model-path | -m   | 指定模型路径        |
+| --use-csv    | -u   | 使用CSV格式数据     |
 
-默认情况下，将从`model.json`加载模型。您可以指定自定义模型路径：
+## 支持的数据格式 📊
 
-```bash
-cargo run -- --test-image /path/to/image.png --model-path /path/to/model.json
-```
+- **CSV格式**: 兼容"A_Z Handwritten Data.csv"格式（第一列为标签0-25，其余列为784像素值）
+- **图像目录**: 按字母分类的PNG图像（如：`data/train/A/`, `data/train/B/`等）
 
-或使用短选项：
+## 技术实现 🧮
 
-```bash
-cargo run -- -i /path/to/image.png -m /path/to/model.json
-```
+- 基于K均值聚类算法的字符分类
+- 图像特征向量提取与匹配
+- JSON格式模型序列化
+- 命令行界面与参数解析
 
-## 命令行参数说明 💻
-
-| 长选项       | 短选项 | 描述              |
-| ------------ | ------ | ----------------- |
-| --train      | -t     | 训练模型          |
-| --train-path | -p     | 训练数据集路径    |
-| --test-image | -i     | 测试图像路径      |
-| --model-path | -m     | 模型保存/加载路径 |
-| --use-csv    | -u     | 使用CSV数据集     |
-
-## 示例 📝
-
-1. 从CSV训练模型：
-   ```bash
-   cargo run -- --train --use-csv
-   ```
-   或
-   ```bash
-   cargo run -- -t -u
-   ```
-
-2. 识别图像：
-   ```bash
-   cargo run -- --test-image test_image.png
-   ```
-   或
-   ```bash
-   cargo run -- -i test_image.png
-   ```
-
-## 算法说明 🧮
-
-本项目使用自定义实现的K均值聚类(KMeans)算法进行字母识别。算法流程如下：
-
-1. 将每个手写字母图像转换为特征向量（28x28=784维）
-2. 使用KMeans算法将特征向量聚类为26个簇（对应26个字母）：
-   - 随机初始化26个聚类中心
-   - 将每个样本分配到最近的聚类中心
-   - 重新计算每个聚类的中心点
-   - 重复上述步骤直到收敛或达到最大迭代次数
-3. 为每个簇分配最常见的字母标签（通过统计每个簇中样本的真实标签）
-4. 识别时，将测试图像转换为特征向量，找到最近的簇，返回该簇对应的字母
-
-## 依赖项 📦
+## 依赖库 📦
 
 - image: 图像处理
-- ndarray: 多维数组操作（带serde支持，用于模型序列化）
-- rand: 随机数生成（用于KMeans初始化）
-- csv: CSV文件处理
-- clap: 命令行参数解析
-- serde_json: 模型序列化和反序列化
+- ndarray: 多维数组操作
+- csv: CSV解析
+- clap: 命令行参数
+- serde_json: 模型序列化
 - anyhow: 错误处理
+- rand: 随机数生成
