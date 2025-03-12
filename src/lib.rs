@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use clap::Parser;
 use csv::ReaderBuilder;
 use image::{DynamicImage, GrayImage};
 use ndarray::{Array1, Array2, ArrayView1};
@@ -8,61 +7,20 @@ use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-// 导入可视化模块
-mod visualize;
-
-/// 手写字母识别系统
-#[derive(Parser, Debug)]
-#[clap(author, version, about)]
-struct Args {
-    /// 训练数据集路径
-    #[clap(short = 'p', long, default_value = "data/A_Z_Handwritten_Data.csv")]
-    train_path: PathBuf,
-
-    /// 测试图像路径
-    #[clap(short = 'i', long)]
-    test_image: Option<PathBuf>,
-
-    /// 训练模型
-    #[clap(short, long)]
-    train: bool,
-
-    /// 保存模型路径
-    #[clap(short, long, default_value = "model.json")]
-    model_path: PathBuf,
-
-    /// 使用CSV数据集
-    #[clap(short, long)]
-    use_csv: bool,
-
-    /// 可视化聚类结果
-    #[clap(long)]
-    visualize_clusters: bool,
-
-    /// 可视化输出目录
-    #[clap(long, default_value = "visualization")]
-    output_dir: PathBuf,
-
-    /// 测试目录
-    #[clap(long)]
-    test_dir: Option<PathBuf>,
-
-    /// 创建混淆矩阵
-    #[clap(long)]
-    confusion_matrix: bool,
-}
+// 导出可视化模块
+pub mod visualize;
 
 /// 自定义的K均值聚类模型
 #[derive(Debug, Serialize, Deserialize)]
-struct KMeansModel {
-    centroids: Array2<f32>,
+pub struct KMeansModel {
+    pub centroids: Array2<f32>,
 }
 
 impl KMeansModel {
     /// 创建新的KMeans模型
-    fn new(k: usize, data: &Array2<f32>) -> Self {
+    pub fn new(k: usize, data: &Array2<f32>) -> Self {
         // 随机初始化聚类中心
         let n_samples = data.nrows();
         let mut indices: Vec<usize> = (0..n_samples).collect();
@@ -81,7 +39,7 @@ impl KMeansModel {
     }
 
     /// 训练模型
-    fn fit(&mut self, data: &Array2<f32>, max_iterations: usize, tolerance: f32) {
+    pub fn fit(&mut self, data: &Array2<f32>, max_iterations: usize, tolerance: f32) {
         let mut old_centroids = self.centroids.clone();
 
         for _ in 0..max_iterations {
@@ -116,7 +74,7 @@ impl KMeansModel {
     }
 
     /// 预测样本所属的聚类
-    fn predict(&self, data: &Array2<f32>) -> Vec<usize> {
+    pub fn predict(&self, data: &Array2<f32>) -> Vec<usize> {
         let mut labels = Vec::with_capacity(data.nrows());
 
         for sample in data.outer_iter() {
@@ -139,7 +97,7 @@ impl KMeansModel {
 }
 
 /// 计算欧几里得距离
-fn euclidean_distance(a: &ArrayView1<f32>, b: &ArrayView1<f32>) -> f32 {
+pub fn euclidean_distance(a: &ArrayView1<f32>, b: &ArrayView1<f32>) -> f32 {
     a.iter()
         .zip(b.iter())
         .map(|(&x, &y)| (x - y).powi(2))
@@ -148,7 +106,7 @@ fn euclidean_distance(a: &ArrayView1<f32>, b: &ArrayView1<f32>) -> f32 {
 }
 
 /// 将图像转换为特征向量
-fn image_to_features(img: &GrayImage) -> Array1<f32> {
+pub fn image_to_features(img: &GrayImage) -> Array1<f32> {
     let (width, height) = img.dimensions();
     let mut features = Vec::with_capacity((width * height) as usize);
 
@@ -164,7 +122,7 @@ fn image_to_features(img: &GrayImage) -> Array1<f32> {
 }
 
 /// 预处理图像：调整大小、转换为灰度
-fn preprocess_image(img: DynamicImage) -> GrayImage {
+pub fn preprocess_image(img: DynamicImage) -> GrayImage {
     // 调整图像大小为 28x28 像素（与 MNIST 数据集相同）
     let resized = img.resize_exact(28, 28, image::imageops::FilterType::Lanczos3);
     // 转换为灰度图像
@@ -172,7 +130,7 @@ fn preprocess_image(img: DynamicImage) -> GrayImage {
 }
 
 /// 从CSV文件加载训练数据
-fn load_training_data_from_csv(file_path: &Path) -> Result<(Array2<f32>, Array1<u8>)> {
+pub fn load_training_data_from_csv(file_path: &Path) -> Result<(Array2<f32>, Array1<u8>)> {
     println!("从CSV加载数据: {}", file_path.display());
 
     // 打开CSV文件
@@ -220,7 +178,7 @@ fn load_training_data_from_csv(file_path: &Path) -> Result<(Array2<f32>, Array1<
 }
 
 /// 从目录加载训练数据
-fn load_training_data_from_dir(dir_path: &Path) -> Result<(Array2<f32>, Array1<u8>)> {
+pub fn load_training_data_from_dir(dir_path: &Path) -> Result<(Array2<f32>, Array1<u8>)> {
     let mut features = Vec::new();
     let mut labels = Vec::new();
 
@@ -275,7 +233,7 @@ fn load_training_data_from_dir(dir_path: &Path) -> Result<(Array2<f32>, Array1<u
 }
 
 /// 训练模型
-fn train_model(
+pub fn train_model(
     features: &Array2<f32>,
     labels: &Array1<u8>,
 ) -> Result<(KMeansModel, HashMap<usize, u8>)> {
@@ -318,21 +276,21 @@ fn train_model(
 }
 
 /// 保存模型到文件
-fn save_model(model: &(KMeansModel, HashMap<usize, u8>), path: &Path) -> Result<()> {
+pub fn save_model(model: &(KMeansModel, HashMap<usize, u8>), path: &Path) -> Result<()> {
     let file = File::create(path)?;
     serde_json::to_writer(file, model)?;
     Ok(())
 }
 
 /// 从文件加载模型
-fn load_model(path: &Path) -> Result<(KMeansModel, HashMap<usize, u8>)> {
+pub fn load_model(path: &Path) -> Result<(KMeansModel, HashMap<usize, u8>)> {
     let file = File::open(path)?;
     let model = serde_json::from_reader(file)?;
     Ok(model)
 }
 
 /// 识别单个图像
-fn recognize_image(model: &(KMeansModel, HashMap<usize, u8>), img_path: &Path) -> Result<char> {
+pub fn recognize_image(model: &(KMeansModel, HashMap<usize, u8>), img_path: &Path) -> Result<char> {
     let (kmeans, cluster_map) = model;
 
     let img = image::open(img_path)?;
@@ -353,80 +311,4 @@ fn recognize_image(model: &(KMeansModel, HashMap<usize, u8>), img_path: &Path) -
     let letter = (label_num + b'A') as char;
 
     Ok(letter)
-}
-
-/// 主函数
-fn main() -> Result<()> {
-    let args = Args::parse();
-
-    if args.train {
-        // 加载训练数据
-        let (features, labels) = if args.use_csv {
-            load_training_data_from_csv(&args.train_path)?
-        } else {
-            load_training_data_from_dir(&args.train_path)?
-        };
-
-        println!("已加载{}个训练样本", features.nrows());
-
-        // 训练模型
-        println!("正在训练模型...");
-        let model = train_model(&features, &labels)?;
-
-        // 保存模型
-        println!("正在保存模型到 {}...", args.model_path.display());
-        save_model(&model, &args.model_path)?;
-        println!("模型已保存!");
-
-        // 可视化聚类结果
-        if args.visualize_clusters {
-            println!("正在可视化聚类结果...");
-            visualize::visualize_clusters(&model.0, &model.1, &args.output_dir)?;
-        }
-
-        // 创建混淆矩阵
-        if args.confusion_matrix {
-            println!("正在创建混淆矩阵...");
-            let output_path = args.output_dir.join("confusion_matrix.png");
-            visualize::create_confusion_matrix(
-                &model.0,
-                &model.1,
-                &features,
-                &labels,
-                &output_path,
-            )?;
-        }
-    }
-
-    // 如果提供了测试目录，则测试模型
-    if let Some(test_dir) = args.test_dir {
-        // 加载模型
-        println!("正在加载模型...");
-        let model = load_model(&args.model_path)?;
-
-        // 测试模型
-        println!("正在测试模型...");
-        let output_dir = args.output_dir.join("test_results");
-        visualize::test_model(&model.0, &model.1, &test_dir, &output_dir)?;
-    }
-
-    if let Some(test_image) = args.test_image {
-        // 加载模型
-        println!("正在加载模型...");
-        let model = load_model(&args.model_path)?;
-
-        // 识别图像
-        println!("正在识别图像...");
-        let letter = recognize_image(&model, &test_image)?;
-        println!("识别结果: {}", letter);
-
-        // 可视化测试图像
-        let output_path = args.output_dir.join(format!(
-            "prediction_{}",
-            test_image.file_name().unwrap().to_string_lossy()
-        ));
-        visualize::visualize_test_image(&model.0, &model.1, &test_image, &output_path)?;
-    }
-
-    Ok(())
 }
